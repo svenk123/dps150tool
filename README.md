@@ -45,7 +45,7 @@ This software currently supports **Linux** systems. It is written in portable C 
 To install the tool, follow these steps:
 
 ```bash
-git clone https://github.com/yourusername/dps150tool.git
+git clone https://github.com/svenk123/dps150tool.git
 cd dps150tool
 make
 ```
