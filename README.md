@@ -80,6 +80,7 @@ Then log out and back in.
 | `-I`              | Read and display current output current |
 | `-V`              | Read and display device information (model, firmware, hardware) |
 | `-z`              | Do not send disconnect command before closing the port |
+| `-v`              | Debug output |
 
 ## 7. Example Usage
 
