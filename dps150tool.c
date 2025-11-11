@@ -43,13 +43,17 @@
 #define OVP 209
 #define OCP 210
 
-#define FWVERSION "1.0"
+#define SOFTWARE_VERSION "1.0"
 
 int serial_fd;
 char *device = "/dev/ttyUSB0";
 int debug; // Debug flag
 
-/* Opens the serial port */
+/**
+ * Opens the serial port
+ * @param device The device to open
+ * @return 0 on success, -1 on error
+ */
 int open_serial(const char *device) {
   struct termios options;
 
@@ -73,7 +77,15 @@ int open_serial(const char *device) {
   return 0;
 }
 
-/* Send command */
+/**
+ * Send command
+ * @param c1 The first command byte
+ * @param c2 The second command byte
+ * @param c3 The third command byte
+ * @param c4 The fourth command byte
+ * @param c5 The fifth command byte
+ * @return 0 on success, -1 on error
+ */
 void send_command(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t *c5, uint8_t c4) {
   uint8_t c6 = c3 + c4;
 
@@ -88,22 +100,32 @@ void send_command(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t *c5, uint8_t c4) {
   command[3] = c4;
   memcpy(&command[4], c5, c4);
   command[4 + c4] = c6;
-  write(serial_fd, command, sizeof(command));
+  (void)write(serial_fd, command, sizeof(command));
   usleep(50000);
 }
 
-/* Filter printable characters from buffer */
+/**
+ * Print printable characters from buffer
+ * @param label The label to print
+ * @param data The data to print
+ * @param length The length of the data
+ */
 void print_printable_string(const char *label, uint8_t *data, int length) {
   printf("%s", label);
+
   for (int i = 0; i < length; i++) {
     if (data[i] >= 0x20 && data[i] <= 0x7E) {
       printf("%c", data[i]);
     }
   }
+  
   printf("\n");
 }
 
-/* Parse response */
+/**
+ * Parse response
+ * @param response_type The type of response to parse
+ */
 void receive_response(int response_type) {
   uint8_t buffer[1024];
 
@@ -113,7 +135,11 @@ void receive_response(int response_type) {
     if (debug) {
       printf("Received: ");
       for (int i = 0; i < bytes_read; i++) {
-        printf("%02X (%03d) ", buffer[i], buffer[i]);
+        if (buffer[i] >= 0x20 && buffer[i] <= 0x7E) {
+          printf("%02X (%03d) '%c'\n", buffer[i], buffer[i], buffer[i]);
+        } else {
+          printf("%02X (%03d) '?'\n", buffer[i], buffer[i]);
+        }
       }
       printf("\n");
     }
@@ -158,7 +184,11 @@ void receive_response(int response_type) {
   }
 }
 
-/* Send float value i.e. voltages, currents,... */
+/**
+ * Send float value i.e. voltages, currents,...
+ * @param type The type of value to send
+ * @param value The value to send
+ */
 void set_float_value(uint8_t type, float value) {
   uint8_t data[4];
 
@@ -173,21 +203,46 @@ void set_byte_value(uint8_t type, uint8_t value) {
   send_command(HEADER_OUTPUT, CMD_SET, type, data, 1);
 }
 
-void enable_output() { set_byte_value(OUTPUT_ENABLE, 1); }
+/**
+ * Enable output
+ */
+void enable_output() { 
+    set_byte_value(OUTPUT_ENABLE, 1); 
+}
 
-void disable_output() { set_byte_value(OUTPUT_ENABLE, 0); }
+/**
+ * Disable output
+ */
+void disable_output() { 
+    set_byte_value(OUTPUT_ENABLE, 0); 
+}
 
-/* Enable or disable over-voltage protection */
-void set_ovp(uint8_t state) { set_byte_value(OVP, state); }
+/**
+ * Enable or disable over-voltage protection
+ * @param state The state to set
+ */
+void set_ovp(uint8_t state) { 
+    set_byte_value(OVP, state); 
+}
 
-/* Enable or disable over-current protection */
-void set_ocp(uint8_t state) { set_byte_value(OCP, state); }
+/**
+ * Enable or disable over-current protection
+ * @param state The state to set
+ */
+void set_ocp(uint8_t state) { 
+    set_byte_value(OCP, state); 
+}
 
+/**
+ * Get model name
+ */
 void get_model_name() {
   send_command(HEADER_OUTPUT, CMD_GET, MODEL_NAME, 0, 0);
 }
 
-/* Initialize the power supply communition */
+/**
+ * Initialize the power supply communition
+ */
 void init_device() {
   uint8_t baudrate_index = 4; // 115200 baud
 
@@ -195,7 +250,10 @@ void init_device() {
   send_command(HEADER_OUTPUT, CMD_XXX_176, 0, &baudrate_index, 1);
 }
 
-/* Close the serial port */
+/**
+ * Close the serial port
+ * @param disconnect Whether to disconnect the device
+ */
 void close_serial(int disconnect) {
   if (disconnect) {
     send_command(HEADER_OUTPUT, CMD_XXX_193, 0, NULL, 0);
@@ -204,12 +262,15 @@ void close_serial(int disconnect) {
   close(serial_fd);
 }
 
-void usage() {
+/**
+ * Print usage
+ */
+void usage(const char *program_name) {
   fprintf(stderr,
           "Usage: %s [-d device] [-u voltage] [-i current] [-x 0|1] [-y "
-          "0|1] [-U] [-I] [-P] [-V] [-o 0|1] [-z] [-d]\n"
+          "0|1] [-U] [-I] [-P] [-V] [-o 0|1] [-z] [-v]\n"
           "Version: %s\n",
-          argv[0], FWVERSION);
+          program_name, SOFTWARE_VERSION);
   exit(EXIT_FAILURE);
 }
 
@@ -222,7 +283,7 @@ int main(int argc, char *argv[]) {
   debug = 0;
 
   if (argc == 1) {
-    usage();
+    usage(argv[0]);
   }
 
   while ((opt = getopt(argc, argv, "d:u:i:x:y:UIPVo:zv")) != -1) {
@@ -264,7 +325,7 @@ int main(int argc, char *argv[]) {
       debug = 1;
       break;
     default:
-      usage();
+      usage(argv[0]);
     }
   }
 
