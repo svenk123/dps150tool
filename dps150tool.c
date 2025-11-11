@@ -251,6 +251,20 @@ void get_model_name() {
 }
 
 /**
+ * Get hardware version
+ */
+void get_hardware_version() {
+  send_command(HEADER_OUTPUT, CMD_GET, HARDWARE_VERSION, 0, 0);
+}
+
+/**
+ * Get firmware version
+ */
+void get_firmware_version() {
+  send_command(HEADER_OUTPUT, CMD_GET, FIRMWARE_VERSION, 0, 0);
+}
+
+/**
  * Initialize the power supply communition
  */
 void init_device() {
@@ -362,7 +376,11 @@ int main(int argc, char *argv[]) {
     receive_response(get_voltage + get_current + get_power);
   if (get_info) {
     get_model_name();
-    receive_response(3);
+    receive_response(7);
+    get_hardware_version();
+    receive_response(7);
+    get_firmware_version();
+    receive_response(7);
   }
 
   close_serial(disconnect);
