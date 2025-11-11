@@ -204,6 +204,15 @@ void close_serial(int disconnect) {
   close(serial_fd);
 }
 
+void usage() {
+  fprintf(stderr,
+          "Usage: %s [-d device] [-u voltage] [-i current] [-x 0|1] [-y "
+          "0|1] [-U] [-I] [-P] [-V] [-o 0|1] [-z] [-d]\n"
+          "Version: %s\n",
+          argv[0], FWVERSION);
+  exit(EXIT_FAILURE);
+}
+
 int main(int argc, char *argv[]) {
   float voltage = -1.0, current = -1.0;
   int output = -1, ovp = -1, ocp = -1, get_voltage = 0, get_current = 0,
@@ -211,6 +220,10 @@ int main(int argc, char *argv[]) {
   int opt;
   int disconnect = 1;
   debug = 0;
+
+  if (argc == 1) {
+    usage();
+  }
 
   while ((opt = getopt(argc, argv, "d:u:i:x:y:UIPVo:zv")) != -1) {
     switch (opt) {
@@ -251,12 +264,7 @@ int main(int argc, char *argv[]) {
       debug = 1;
       break;
     default:
-      fprintf(stderr,
-              "Usage: %s [-d device] [-u voltage] [-i current] [-x 0|1] [-y "
-              "0|1] [-U] [-I] [-P] [-V] [-o 0|1] [-z] [-d]\n"
-              "Version: %s\n",
-              argv[0], FWVERSION);
-      exit(EXIT_FAILURE);
+      usage();
     }
   }
 
