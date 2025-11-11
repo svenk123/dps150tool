@@ -45,6 +45,16 @@
 
 #define SOFTWARE_VERSION "1.0"
 
+/**
+ * Check if a specific bit is set in an integer value
+ * @param value The integer value to check
+ * @param bit The bit position to check (0-based, 0 = least significant bit)
+ * @return 1 if bit is set, 0 otherwise
+ */
+static inline int is_bit_set(int value, int bit) {
+  return (value & (1 << bit)) != 0;
+}
+
 int serial_fd;
 char *device = "/dev/ttyUSB0";
 int debug; // Debug flag
@@ -157,15 +167,15 @@ void receive_response(int response_type) {
         printf("Output Current: %.2fA\n", value);
         break;
       case VOLTAGE_CURRENT_POWER_GET:
-        if (response_type == 0)
-          printf("Output Voltage: %.2fV\n", value);
-        if (response_type == 1) {
+        if (is_bit_set(response_type, 0))
+          printf("Output Voltage: %.2f V\n", value);
+        if (is_bit_set(response_type, 1)) {
           memcpy(&value, &buffer[4 + 4], sizeof(float));
-          printf("Output Current: %.3fA\n", value);
+          printf("Output Current: %.3f A\n", value);
         }
-        if (response_type == 2) {
+        if (is_bit_set(response_type, 2)) {
           memcpy(&value, &buffer[4 + 8], sizeof(float));
-          printf("Output Power: %.2fW\n", value);
+          printf("Output Power: %.2f W\n", value);
         }
         break;
       case 222:
@@ -307,10 +317,10 @@ int main(int argc, char *argv[]) {
       get_voltage = 1;
       break;
     case 'I':
-      get_current = 1;
+      get_current = 2;
       break;
     case 'P':
-      get_power = 1;
+      get_power = 4;
       break;
     case 'V':
       get_info = 1;
@@ -348,12 +358,8 @@ int main(int argc, char *argv[]) {
   if (ocp >= 0)
     set_ocp(ocp);
 
-  if (get_voltage)
-    receive_response(0);
-  if (get_current)
-    receive_response(1);
-  if (get_power)
-    receive_response(2);
+  if (get_voltage || get_current || get_power)
+    receive_response(get_voltage + get_current + get_power);
   if (get_info) {
     get_model_name();
     receive_response(3);
